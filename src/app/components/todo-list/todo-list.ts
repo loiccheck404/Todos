@@ -1,11 +1,358 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TodoService } from '../../services/todo.service';
+import { TodoModel } from '../../models';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-todo-list',
-  imports: [],
-  templateUrl: './todo-list.html',
-  styleUrl: './todo-list.css'
-})
-export class TodoList {
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div class="todo-list-container">
+      <div class="todo-stats" *ngIf="stats$ | async as stats">
+        <span class="stat">Total: {{ stats.total }}</span>
+        <span class="stat">Active: {{ stats.active }}</span>
+        <span class="stat">Completed: {{ stats.completed }}</span>
+      </div>
 
+      <div class="todo-list" *ngIf="filteredTodos$ | async as todos">
+        <div *ngIf="todos.length === 0" class="empty-state">
+          <p>No todos yet. Add your first todo above!</p>
+          <button (click)="addSampleData()" class="sample-btn">Add Sample Todos</button>
+        </div>
+
+        <div
+          *ngFor="let todo of todos; trackBy: trackByTodoId"
+          class="todo-item"
+          [class.completed]="todo.completed"
+          [class.high-priority]="todo.priority === 'high'"
+          [class.medium-priority]="todo.priority === 'medium'"
+          [class.low-priority]="todo.priority === 'low'"
+        >
+          <div class="todo-content">
+            <div class="todo-header">
+              <input
+                type="checkbox"
+                [checked]="todo.completed"
+                (change)="toggleTodo(todo.id)"
+                class="todo-checkbox"
+              />
+
+              <h3 class="todo-title" [class.completed]="todo.completed">
+                {{ todo.title }}
+              </h3>
+
+              <span class="priority-badge priority-{{ todo.priority }}">
+                {{ todo.priority }}
+              </span>
+            </div>
+
+            <p *ngIf="todo.description" class="todo-description">
+              {{ todo.description }}
+            </p>
+
+            <div class="todo-meta">
+              <span class="created-date"> Created: {{ todo.createdAt | date : 'short' }} </span>
+              <span *ngIf="todo.dueDate" class="due-date" [class.overdue]="todo.isOverdue()">
+                Due: {{ todo.dueDate | date : 'short' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="todo-actions">
+            <button (click)="editTodo(todo)" class="edit-btn" title="Edit">✏️</button>
+            <button (click)="deleteTodo(todo.id)" class="delete-btn" title="Delete">🗑️</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bulk-actions" *ngIf="(stats$ | async)?.total! > 0">
+        <button (click)="markAllComplete()" class="bulk-btn">Mark All Complete</button>
+        <button (click)="markAllIncomplete()" class="bulk-btn">Mark All Incomplete</button>
+        <button
+          (click)="deleteCompleted()"
+          class="bulk-btn danger"
+          *ngIf="(stats$ | async)?.completed! > 0"
+        >
+          Delete Completed ({{ (stats$ | async)?.completed }})
+        </button>
+      </div>
+    </div>
+  `,
+  styles: [
+    `
+      .todo-list-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .todo-stats {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        gap: 20px;
+      }
+
+      .stat {
+        font-size: 14px;
+        font-weight: 600;
+        color: #666;
+      }
+
+      .todo-list {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      .empty-state {
+        padding: 40px 20px;
+        text-align: center;
+        color: #666;
+      }
+
+      .sample-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .todo-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease;
+      }
+
+      .todo-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      .todo-item.completed {
+        opacity: 0.7;
+        background-color: #f8f9fa;
+      }
+
+      .todo-content {
+        flex: 1;
+      }
+
+      .todo-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .todo-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .todo-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 500;
+        flex: 1;
+        color: #333;
+      }
+
+      .todo-title.completed {
+        text-decoration: line-through;
+        color: #666;
+      }
+
+      .priority-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .priority-high {
+        background: #dc3545;
+        color: white;
+      }
+
+      .priority-medium {
+        background: #ffc107;
+        color: #000;
+      }
+
+      .priority-low {
+        background: #28a745;
+        color: white;
+      }
+
+      .todo-description {
+        margin: 8px 0;
+        color: #666;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .todo-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 12px;
+        color: #888;
+        margin-top: 8px;
+      }
+
+      .due-date.overdue {
+        color: #dc3545;
+        font-weight: 600;
+      }
+
+      .todo-actions {
+        display: flex;
+        gap: 8px;
+        margin-left: 12px;
+      }
+
+      .edit-btn,
+      .delete-btn {
+        background: none;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.2s ease;
+      }
+
+      .edit-btn:hover {
+        background: #e3f2fd;
+      }
+
+      .delete-btn:hover {
+        background: #ffebee;
+      }
+
+      .bulk-actions {
+        padding: 15px 20px;
+        border-top: 1px solid #e9ecef;
+        background: #f8f9fa;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .bulk-btn {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background-color 0.2s ease;
+      }
+
+      .bulk-btn:hover {
+        background: #5a6268;
+      }
+
+      .bulk-btn.danger {
+        background: #dc3545;
+      }
+
+      .bulk-btn.danger:hover {
+        background: #c82333;
+      }
+
+      /* Border colors for priority levels */
+      .high-priority {
+        border-left: 4px solid #dc3545;
+      }
+
+      .medium-priority {
+        border-left: 4px solid #ffc107;
+      }
+
+      .low-priority {
+        border-left: 4px solid #28a745;
+      }
+
+      @media (max-width: 768px) {
+        .todo-stats {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .todo-header {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .bulk-actions {
+          flex-direction: column;
+        }
+
+        .bulk-btn {
+          width: 100%;
+        }
+      }
+    `,
+  ],
+})
+export class TodoListComponent implements OnInit {
+  filteredTodos$: Observable<TodoModel[]>;
+  stats$: Observable<any>;
+
+  constructor(private todoService: TodoService) {
+    this.filteredTodos$ = this.todoService.filteredTodos$;
+    this.stats$ = this.todoService.stats$;
+  }
+
+  ngOnInit() {}
+
+  trackByTodoId(index: number, todo: TodoModel): string {
+    return todo.id;
+  }
+
+  toggleTodo(id: string) {
+    this.todoService.toggleTodo(id);
+  }
+
+  deleteTodo(id: string) {
+    if (confirm('Are you sure you want to delete this todo?')) {
+      this.todoService.deleteTodo(id);
+    }
+  }
+
+  editTodo(todo: TodoModel) {
+    // For now, let's just show an alert. We'll implement editing later
+    alert(`Edit todo: ${todo.title}\n(Edit functionality coming soon!)`);
+  }
+
+  markAllComplete() {
+    this.todoService.markAllComplete();
+  }
+
+  markAllIncomplete() {
+    this.todoService.markAllIncomplete();
+  }
+
+  deleteCompleted() {
+    if (confirm('Are you sure you want to delete all completed todos?')) {
+      const deletedCount = this.todoService.deleteCompleted();
+      alert(`Deleted ${deletedCount} completed todos`);
+    }
+  }
+
+  addSampleData() {
+    this.todoService.addSampleData();
+  }
 }

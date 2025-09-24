@@ -244,6 +244,12 @@ export class TodoService {
   }
 
   private loadFromStorage(): void {
+    // Check if we're in browser environment
+    if (typeof localStorage === 'undefined') {
+      this.todosSubject.next([]);
+      return;
+    }
+
     try {
       const data = localStorage.getItem(this.STORAGE_KEY);
       if (data) {
@@ -253,7 +259,6 @@ export class TodoService {
       }
     } catch (error) {
       console.error('Failed to load todos from localStorage:', error);
-      // Initialize with empty array if loading fails
       this.todosSubject.next([]);
     }
   }

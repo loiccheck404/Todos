@@ -1,1 +1,62 @@
-<p>add-todo works!</p>
+<form class="add-todo-form" (ngSubmit)="onSubmit()" #todoForm="ngForm">
+  <div class="form-group">
+    <input
+      type="text"
+      class="todo-input"
+      [(ngModel)]="newTodo.title"
+      name="title"
+      placeholder="What needs to be done?"
+      required
+      #titleInput="ngModel"
+      maxlength="100"
+    />
+
+    <div class="validation-error" *ngIf="titleInput.invalid && titleInput.touched">
+      Title is required
+    </div>
+  </div>
+
+  <div class="form-group" *ngIf="showDetails">
+    <textarea
+      class="todo-description"
+      [(ngModel)]="newTodo.description"
+      name="description"
+      placeholder="Add description (optional)"
+      maxlength="500"
+      rows="3"
+    >
+    </textarea>
+  </div>
+
+  <div class="form-actions" *ngIf="showDetails">
+    <div class="priority-selector">
+      <label>Priority:</label>
+      <select [(ngModel)]="newTodo.priority" name="priority" class="priority-select">
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+
+    <div class="due-date">
+      <label>Due Date:</label>
+      <input
+        type="date"
+        [(ngModel)]="newTodo.dueDate"
+        name="dueDate"
+        class="date-input"
+        [min]="today"
+      />
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button type="button" class="toggle-details-btn" (click)="toggleDetails()">
+      {{ showDetails ? 'Less Options' : 'More Options' }}
+    </button>
+
+    <button type="submit" class="add-btn" [disabled]="!todoForm.valid || isSubmitting">
+      {{ isSubmitting ? 'Adding...' : 'Add Todo' }}
+    </button>
+  </div>
+</form>
