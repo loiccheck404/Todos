@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
+import { BehaviorSubject, Observable, map, combineLatest } from 'rxjs';
 import { Todo, TodoModel, TodoPriority, TodoStatus, TodoFilter, TodoStats } from '../models';
 
 @Injectable({
@@ -18,8 +18,8 @@ export class TodoService {
   public filter$ = this.filterSubject.asObservable();
 
   // Filtered todos based on current filter
-  public filteredTodos$ = this.todos$.pipe(
-    map((todos) => this.applyFilter(todos, this.filterSubject.value))
+  public filteredTodos$ = combineLatest([this.todos$, this.filter$]).pipe(
+    map(([todos, filter]) => this.applyFilter(todos, filter))
   );
 
   // Statistics
@@ -196,6 +196,10 @@ export class TodoService {
   private applyFilter(todos: TodoModel[], filter: TodoFilter): TodoModel[] {
     let filtered = [...todos];
 
+    // Debug logging - remove later
+    console.log('Applying filter:', filter);
+    console.log('Total todos:', todos.length);
+
     // Status filter
     switch (filter.status) {
       case TodoStatus.ACTIVE:
@@ -204,8 +208,13 @@ export class TodoService {
       case TodoStatus.COMPLETED:
         filtered = filtered.filter((todo) => todo.completed);
         break;
-      // ALL shows everything
+      case TodoStatus.ALL:
+      default:
+        // Show all todos
+        break;
     }
+
+    console.log('After status filter:', filtered.length);
 
     // Priority filter
     if (filter.priority) {
@@ -213,8 +222,8 @@ export class TodoService {
     }
 
     // Search filter
-    if (filter.searchTerm) {
-      const searchTerm = filter.searchTerm.toLowerCase();
+    if (filter.searchTerm && filter.searchTerm.trim()) {
+      const searchTerm = filter.searchTerm.toLowerCase().trim();
       filtered = filtered.filter(
         (todo) =>
           todo.title.toLowerCase().includes(searchTerm) ||
@@ -222,6 +231,7 @@ export class TodoService {
       );
     }
 
+    console.log('Final filtered result:', filtered.length);
     return filtered;
   }
 
