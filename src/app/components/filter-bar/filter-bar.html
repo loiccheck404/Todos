@@ -1,1 +1,75 @@
-<p>filter-bar works!</p>
+<div class="filter-bar">
+  <div class="filter-section">
+    <div class="filter-group">
+      <label class="filter-label">Status:</label>
+      <div class="button-group">
+        <button 
+          *ngFor="let status of statusFilters" 
+          class="filter-btn"
+          [class.active]="currentFilter.status === status.value"
+          (click)="setStatusFilter(status.value)"
+          [title]="status.label">
+          {{ status.label }}
+          <span class="count">({{ status.count }})</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label class="filter-label">Priority:</label>
+      <div class="button-group">
+        <button 
+          class="filter-btn priority-filter"
+          [class.active]="currentFilter.priority === undefined"
+          (click)="setPriorityFilter(undefined)"
+          title="All Priorities">
+          All
+        </button>
+        <button 
+          *ngFor="let priority of priorityFilters" 
+          class="filter-btn priority-filter"
+          [class.active]="currentFilter.priority === priority.value"
+          [class]="'priority-' + priority.value"
+          (click)="setPriorityFilter(priority.value)"
+          [title]="priority.label + ' Priority'">
+          {{ priority.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-section">
+    <div class="search-input-wrapper">
+      <input 
+        type="text" 
+        class="search-input"
+        placeholder="Search todos..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchInput($event)"
+        #searchInput>
+      
+      <button 
+        *ngIf="searchTerm" 
+        class="clear-search"
+        (click)="clearSearch(); searchInput.focus()"
+        title="Clear search">
+        ×
+      </button>
+      
+      <span class="search-icon">🔍</span>
+    </div>
+  </div>
+
+  <div class="filter-actions" *ngIf="hasActiveFilters()">
+    <button 
+      class="clear-filters-btn"
+      (click)="clearAllFilters()"
+      title="Clear all filters">
+      Clear Filters
+    </button>
+    
+    <span class="active-filters-indicator">
+      {{ getActiveFiltersText() }}
+    </span>
+  </div>
+</div>
