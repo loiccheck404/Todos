@@ -329,12 +329,13 @@ export class TodoListComponent implements OnInit {
   currentTodos: TodoModel[] = []; // Cache for drag operations
 
   constructor(
-  private todoService: TodoService,
-  private notificationService: NotificationService
-) {
-  this.filteredTodos$ = this.todoService.filteredTodos$;
-  this.stats$ = this.todoService.stats$;
-}
+    private todoService: TodoService,
+    private notificationService: NotificationService,
+    private confirmationService: ConfirmationService
+  ) {
+    this.filteredTodos$ = this.todoService.filteredTodos$;
+    this.stats$ = this.todoService.stats$;
+  }
 
   ngOnInit() {
     // Cache todos for drag operations
@@ -351,9 +352,17 @@ export class TodoListComponent implements OnInit {
     this.todoService.toggleTodo(id);
   }
 
-  deleteTodo(id: string) {
-    if (confirm('Are you sure you want to delete this todo?')) {
-      this.todoService.deleteTodo(id);
+  async deleteTodo(id: string) {
+    const todo = this.todoService.getTodoById(id);
+    const confirmed = await this.confirmationService.confirmDelete(todo?.title);
+
+    if (confirmed) {
+      const success = this.todoService.deleteTodo(id);
+      if (success) {
+        this.notificationService.success('Todo deleted successfully');
+      } else {
+        this.notificationService.error('Failed to delete todo');
+      }
     }
   }
 
@@ -364,17 +373,25 @@ export class TodoListComponent implements OnInit {
 
   markAllComplete() {
     this.todoService.markAllComplete();
+    this.notificationService.success('All todos marked as complete');
   }
 
   markAllIncomplete() {
     this.todoService.markAllIncomplete();
+    this.notificationService.info('All todos marked as incomplete');
   }
 
-  deleteCompleted() {
-    if (confirm('Are you sure you want to delete all completed todos?')) {
-      const deletedCount = this.todoService.deleteCompleted();
-      alert(`Deleted ${deletedCount} completed todos`);
-    }
+  async deleteCompleted() {
+    this.stats$.pipe(take(1)).subscribe(async (stats) => {
+      if (!stats?.completed) return;
+
+      const confirmed = await this.confirmationService.confirmBulkDelete(stats.completed);
+
+      if (confirmed) {
+        const deletedCount = this.todoService.deleteCompleted();
+        this.notificationService.success(`Deleted ${deletedCount} completed todos`);
+      }
+    });
   }
 
   addSampleData() {
