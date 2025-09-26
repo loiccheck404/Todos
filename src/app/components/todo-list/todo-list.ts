@@ -26,12 +26,21 @@ import { take } from 'rxjs/operators';
         </div>
 
         <div
-          *ngFor="let todo of todos; trackBy: trackByTodoId"
+          *ngFor="let todo of todos; trackBy: trackByTodoId; let i = index"
           class="todo-item"
           [class.completed]="todo.completed"
           [class.high-priority]="todo.priority === 'high'"
           [class.medium-priority]="todo.priority === 'medium'"
           [class.low-priority]="todo.priority === 'low'"
+          [class.dragging]="draggedIndex === i"
+          [class.drag-over]="dragOverIndex === i"
+          draggable="true"
+          (dragstart)="onDragStart($event, i)"
+          (dragover)="onDragOver($event, i)"
+          (dragenter)="onDragEnter($event, i)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event, i)"
+          (dragend)="onDragEnd($event)"
         >
           <div class="todo-content">
             <div class="todo-header">
@@ -314,16 +323,25 @@ export class TodoListComponent implements OnInit {
   filteredTodos$: Observable<TodoModel[]>;
   stats$: Observable<any>;
 
-  constructor(
-    private todoService: TodoService,
-    private notificationService: NotificationService,
-    private confirmationService: ConfirmationService
-  ) {
-    this.filteredTodos$ = this.todoService.filteredTodos$;
-    this.stats$ = this.todoService.stats$;
-  }
+  // Drag and drop properties
+  draggedIndex: number | null = null;
+  dragOverIndex: number | null = null;
+  currentTodos: TodoModel[] = []; // Cache for drag operations
 
-  ngOnInit() {}
+  constructor(
+  private todoService: TodoService,
+  private notificationService: NotificationService
+) {
+  this.filteredTodos$ = this.todoService.filteredTodos$;
+  this.stats$ = this.todoService.stats$;
+}
+
+  ngOnInit() {
+    // Cache todos for drag operations
+    this.filteredTodos$.subscribe((todos) => {
+      this.currentTodos = todos;
+    });
+  }
 
   trackByTodoId(index: number, todo: TodoModel): string {
     return todo.id;
@@ -333,17 +351,9 @@ export class TodoListComponent implements OnInit {
     this.todoService.toggleTodo(id);
   }
 
-  async deleteTodo(id: string) {
-    const todo = this.todoService.getTodoById(id);
-    const confirmed = await this.confirmationService.confirmDelete(todo?.title);
-
-    if (confirmed) {
-      const success = this.todoService.deleteTodo(id);
-      if (success) {
-        this.notificationService.success('Todo deleted successfully');
-      } else {
-        this.notificationService.error('Failed to delete todo');
-      }
+  deleteTodo(id: string) {
+    if (confirm('Are you sure you want to delete this todo?')) {
+      this.todoService.deleteTodo(id);
     }
   }
 
@@ -354,27 +364,98 @@ export class TodoListComponent implements OnInit {
 
   markAllComplete() {
     this.todoService.markAllComplete();
-    this.notificationService.success('All todos marked as complete');
   }
 
   markAllIncomplete() {
     this.todoService.markAllIncomplete();
-    this.notificationService.info('All todos marked as incomplete');
   }
 
-  async deleteCompleted() {
-    const stats = await this.todoService.stats$.pipe(take(1)).toPromise();
-    if (!stats?.completed) return;
-
-    const confirmed = await this.confirmationService.confirmBulkDelete(stats.completed);
-
-    if (confirmed) {
+  deleteCompleted() {
+    if (confirm('Are you sure you want to delete all completed todos?')) {
       const deletedCount = this.todoService.deleteCompleted();
-      this.notificationService.success(`Deleted ${deletedCount} completed todos`);
+      alert(`Deleted ${deletedCount} completed todos`);
     }
   }
 
   addSampleData() {
     this.todoService.addSampleData();
+  }
+
+  // Drag and Drop Methods
+  onDragStart(event: DragEvent, index: number): void {
+    this.draggedIndex = index;
+    const todo = this.currentTodos[index];
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/html', todo.id);
+    }
+
+    // Add visual feedback
+    setTimeout(() => {
+      const element = event.target as HTMLElement;
+      element.style.opacity = '0.5';
+    }, 0);
+  }
+
+  onDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.dragOverIndex = index;
+  }
+
+  onDragEnter(event: DragEvent, index: number): void {
+    event.preventDefault();
+    this.dragOverIndex = index;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    // Only clear dragOver if we're leaving the container, not just moving between child elements
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = event.clientX;
+    const y = event.clientY;
+
+    if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+      this.dragOverIndex = null;
+    }
+  }
+
+  onDrop(event: DragEvent, dropIndex: number): void {
+    event.preventDefault();
+
+    if (this.draggedIndex !== null && this.draggedIndex !== dropIndex) {
+      const draggedTodo = this.currentTodos[this.draggedIndex];
+      const targetTodo = this.currentTodos[dropIndex];
+
+      // Find the todos in the full list (not filtered) to get correct indices
+      this.todoService.todos$.pipe(take(1)).subscribe((allTodos) => {
+        const draggedOriginalIndex = allTodos.findIndex((t) => t.id === draggedTodo.id);
+        const targetOriginalIndex = allTodos.findIndex((t) => t.id === targetTodo.id);
+
+        if (draggedOriginalIndex !== -1 && targetOriginalIndex !== -1) {
+          this.todoService.reorderTodos(draggedOriginalIndex, targetOriginalIndex);
+
+          // Show success notification
+          this.notificationService.success(`Moved "${draggedTodo.title}" to new position`);
+        }
+      });
+    }
+
+    this.resetDragState();
+  }
+
+  onDragEnd(event: DragEvent): void {
+    // Restore visual feedback
+    const element = event.target as HTMLElement;
+    element.style.opacity = '1';
+
+    this.resetDragState();
+  }
+
+  private resetDragState(): void {
+    this.draggedIndex = null;
+    this.dragOverIndex = null;
   }
 }

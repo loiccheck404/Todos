@@ -1,0 +1,46 @@
+/* Drag and Drop Styles */
+.todo-item[draggable='true'] {
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.todo-item[draggable='true']:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.todo-item.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  cursor: grabbing;
+}
+
+.todo-item.drag-over {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+  border-color: #007bff !important;
+}
+
+.todo-item.drag-over::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #007bff;
+  border-radius: 2px;
+}
+
+/* Drag handle indicator */
+.todo-item:hover::after {
+  content: '⋮⋮';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ccc;
+  font-size: 18px;
+  letter-spacing: -2px;
+  pointer-events: none;
+}
