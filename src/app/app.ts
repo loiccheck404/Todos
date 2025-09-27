@@ -6,6 +6,7 @@ import { TodoListComponent } from './components/todo-list/todo-list';
 import { FilterBarComponent } from './components/filter-bar/filter-bar';
 import { ToastComponent } from './components/toast/toast';
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog';
+import { EditTodoComponent } from './components/edit-todo/edit-todo';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +17,7 @@ import { ConfirmationDialogComponent } from './components/confirmation-dialog/co
     AddTodoComponent,
     FilterBarComponent,
     TodoListComponent,
+    EditTodoComponent, // Add this
     ToastComponent,
     ConfirmationDialogComponent,
   ],

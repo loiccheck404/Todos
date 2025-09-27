@@ -6,11 +6,13 @@ import { Observable } from 'rxjs';
 import { NotificationService } from '../../services/notification.service';
 import { ConfirmationService } from '../../services/confirmation.service';
 import { take } from 'rxjs/operators';
+// In todo-list.ts imports
+import { EditTodoComponent } from '../edit-todo/edit-todo';
 
 @Component({
   selector: 'app-todo-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, EditTodoComponent],
   template: `
     <div class="todo-list-container">
       <div class="todo-stats" *ngIf="stats$ | async as stats">
@@ -91,6 +93,14 @@ import { take } from 'rxjs/operators';
         </button>
       </div>
     </div>
+
+    <app-edit-todo
+      [todo]="editingTodo"
+      [isVisible]="showEditModal"
+      (save)="onEditSave($event)"
+      (cancel)="onEditCancel()"
+    >
+    </app-edit-todo>
   `,
   styles: [
     `
@@ -328,6 +338,10 @@ export class TodoListComponent implements OnInit {
   dragOverIndex: number | null = null;
   currentTodos: TodoModel[] = []; // Cache for drag operations
 
+  // Edit modal state
+  editingTodo: TodoModel | null = null;
+  showEditModal = false;
+
   constructor(
     private todoService: TodoService,
     private notificationService: NotificationService,
@@ -367,8 +381,29 @@ export class TodoListComponent implements OnInit {
   }
 
   editTodo(todo: TodoModel) {
-    // For now, let's just show an alert. We'll implement editing later
-    alert(`Edit todo: ${todo.title}\n(Edit functionality coming soon!)`);
+    this.editingTodo = todo;
+    this.showEditModal = true;
+  }
+
+  onEditSave(updates: Partial<TodoModel>) {
+    if (this.editingTodo) {
+      const success = this.todoService.updateTodo(this.editingTodo.id, updates);
+      if (success) {
+        this.notificationService.success('Todo updated successfully');
+      } else {
+        this.notificationService.error('Failed to update todo');
+      }
+    }
+    this.closeEditModal();
+  }
+
+  onEditCancel() {
+    this.closeEditModal();
+  }
+
+  private closeEditModal() {
+    this.showEditModal = false;
+    this.editingTodo = null;
   }
 
   markAllComplete() {
