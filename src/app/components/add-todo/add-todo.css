@@ -170,3 +170,38 @@
     width: 100%;
   }
 }
+
+.datetime-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.date-input {
+  flex: 2;
+}
+
+.time-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.time-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+@media (max-width: 768px) {
+  .datetime-inputs {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .date-input,
+  .time-input {
+    flex: none;
+  }
+}

@@ -19,6 +19,7 @@ export class AddTodoComponent {
     description: '',
     priority: TodoPriority.MEDIUM,
     dueDate: null as string | null,
+    dueTime: '' as string,
   };
 
   showDetails = false;
@@ -33,6 +34,14 @@ export class AddTodoComponent {
     }
 
     this.isSubmitting = true;
+
+    // Combine date and time into a single Date object
+    let dueDatetime: Date | undefined = undefined;
+    if (this.newTodo.dueDate) {
+      const dateStr = this.newTodo.dueDate;
+      const timeStr = this.newTodo.dueTime || '23:59'; // Default to end of day if no time
+      dueDatetime = new Date(`${dateStr}T${timeStr}`);
+    }
 
     // Prepare todo data
     const todoData = {
@@ -58,12 +67,12 @@ export class AddTodoComponent {
   }
 
   private resetForm(): void {
-    // Reset the model
     this.newTodo = {
       title: '',
       description: '',
       priority: TodoPriority.MEDIUM,
       dueDate: null,
+      dueTime: '',
     };
 
     // Reset form validation state

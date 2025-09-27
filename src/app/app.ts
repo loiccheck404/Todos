@@ -17,7 +17,7 @@ import { EditTodoComponent } from './components/edit-todo/edit-todo';
     AddTodoComponent,
     FilterBarComponent,
     TodoListComponent,
-    EditTodoComponent, // Add this
+    //EditTodoComponent, // Add this
     ToastComponent,
     ConfirmationDialogComponent,
   ],

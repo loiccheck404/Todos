@@ -39,14 +39,17 @@
     </div>
 
     <div class="due-date">
-      <label>Due Date:</label>
-      <input
-        type="date"
-        [(ngModel)]="newTodo.dueDate"
-        name="dueDate"
-        class="date-input"
-        [min]="today"
-      />
+      <label>Due Date & Time:</label>
+      <div class="datetime-inputs">
+        <input
+          type="date"
+          [(ngModel)]="newTodo.dueDate"
+          name="dueDate"
+          class="date-input"
+          [min]="today"
+        />
+        <input type="time" [(ngModel)]="newTodo.dueTime" name="dueTime" class="time-input" />
+      </div>
     </div>
   </div>
 

@@ -69,7 +69,7 @@ import { EditTodoComponent } from '../edit-todo/edit-todo';
             <div class="todo-meta">
               <span class="created-date"> Created: {{ todo.createdAt | date : 'short' }} </span>
               <span *ngIf="todo.dueDate" class="due-date" [class.overdue]="todo.isOverdue()">
-                Due: {{ todo.dueDate | date : 'short' }}
+                Due: {{ todo.dueDate | date : 'MMM d, y h:mm a' }}
               </span>
             </div>
           </div>
