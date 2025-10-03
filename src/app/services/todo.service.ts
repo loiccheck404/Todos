@@ -186,8 +186,15 @@ export class TodoService {
 
   // Private helper methods
   private updateTodos(todos: TodoModel[]): void {
-    // Sort by order for consistent display
-    todos.sort((a, b) => a.order - b.order);
+    // Sort by completion status first (incomplete first), then by order
+    todos.sort((a, b) => {
+      // If completion status differs, incomplete comes first
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      // If both have same completion status, sort by order
+      return a.order - b.order;
+    });
 
     this.todosSubject.next(todos);
     this.saveToStorage(todos);
