@@ -72,6 +72,8 @@ export class TodoService {
     if (!todo) return false;
 
     todo.toggle();
+
+
     this.updateTodos([...todos]);
     return true;
   }

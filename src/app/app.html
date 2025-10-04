@@ -1,6 +1,9 @@
 <div class="app-container">
   <header>
     <h1>TODOs</h1>
+    <button class="reminder-toggle" (click)="toggleReminders()" title="Toggle reminders">
+      🔔 {{ remindersEnabled ? 'ON' : 'OFF' }}
+    </button>
   </header>
 
   <main>
